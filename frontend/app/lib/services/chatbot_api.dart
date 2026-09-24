@@ -3,12 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/models.dart';
+import 'api_service.dart';
 
 class ChatbotApi {
-  static const baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'https://whatsapp-chatbot-tvds.onrender.com',
-  );
+  static const String baseUrl = ApiService.baseUrl;
 
   Future<List<Organization>> organizations([String query = '']) async {
     final response = await http.get(
