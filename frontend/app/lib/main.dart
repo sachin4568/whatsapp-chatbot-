@@ -38,7 +38,7 @@ class WhatsAppSchoolPrototype extends StatelessWidget {
 class Api {
   static const baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://127.0.0.1:8000',
+    defaultValue: 'https://whatsapp-chatbot-tvds.onrender.com',
   );
 
   static const _timeout = Duration(seconds: 12);
@@ -71,6 +71,10 @@ class Api {
         )
         .timeout(_timeout);
 
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to create user profile (${response.statusCode})');
+    }
+
     return UserProfile.fromJson(jsonDecode(response.body));
   }
 
@@ -96,6 +100,10 @@ class Api {
           }),
         )
         .timeout(_timeout);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to create business (${response.statusCode})');
+    }
 
     return Organization.fromJson(jsonDecode(response.body));
   }
@@ -592,6 +600,10 @@ class _UserProfileFormState extends State<UserProfileForm> {
     if (name.text.trim().isEmpty ||
         contact.text.trim().isEmpty ||
         email.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Complete all profile fields to continue.')),
+      );
       return;
     }
 
@@ -605,6 +617,12 @@ class _UserProfileFormState extends State<UserProfileForm> {
       );
 
       if (mounted) Navigator.pop(context, user);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not create your profile: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -657,7 +675,13 @@ class _BusinessProfileFormState extends State<BusinessProfileForm> {
   bool loading = false;
 
   Future<void> submit() async {
-    if (name.text.trim().isEmpty || type.text.trim().isEmpty) return;
+    if (name.text.trim().isEmpty || type.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Enter a business name and type to continue.')),
+      );
+      return;
+    }
 
     setState(() => loading = true);
 
@@ -672,6 +696,12 @@ class _BusinessProfileFormState extends State<BusinessProfileForm> {
       );
 
       if (mounted) Navigator.pop(context, business);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not create the business: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }

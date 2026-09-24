@@ -7,7 +7,7 @@ import '../models/models.dart';
 class ChatbotApi {
   static const baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://whatsapp-chatbot-tvds.onrender.com',
   );
 
   Future<List<Organization>> organizations([String query = '']) async {
@@ -97,8 +97,7 @@ class ChatbotApi {
       Uri.parse('$baseUrl/api/conversations/$conversationId/messages'),
     );
 
-    return (jsonDecode(response.body) as List)
-        .cast<Map<String, dynamic>>();
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
   }
 
   Future<void> updateProfile(
