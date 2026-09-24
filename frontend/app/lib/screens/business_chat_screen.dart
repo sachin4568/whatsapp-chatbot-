@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/chatbot_api.dart';
-import '../widgets/message_bubble.dart';
+import '../theme/whatsapp_theme.dart';
+import '../widgets/whatsapp_chat_background.dart';
+import '../widgets/whatsapp_chat_header.dart';
+import '../widgets/whatsapp_date_separator.dart';
+import '../widgets/whatsapp_message_bubble.dart';
 
 class BusinessChatScreen extends StatefulWidget {
   const BusinessChatScreen({
@@ -35,17 +39,21 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
     setState(() => loading = true);
     try {
       if (widget.conversation == null) {
-        // Load list of conversations for the organization (optionally filtered)
-        conversationList = await api.conversations(widget.organization.id, state: widget.filter);
+        conversationList = await api.conversations(
+          widget.organization.id,
+          state: widget.filter,
+        );
       } else {
-        // Load messages for a specific conversation
         final raw = await api.messages(widget.conversation!.id);
         messages = raw
-            .map((x) => ChatMessage(
-                  text: x['text'] as String,
-                  sender: x['sender_type'] == 'USER' ? 'USER' : 'BOT',
-                  at: DateTime.tryParse(x['created_at'] as String) ?? DateTime.now(),
-                ))
+            .map(
+              (x) => ChatMessage(
+                text: x['text'] as String,
+                sender: x['sender_type'] == 'USER' ? 'USER' : 'BOT',
+                at: DateTime.tryParse(x['created_at'] as String) ??
+                    DateTime.now(),
+              ),
+            )
             .toList();
       }
     } finally {
@@ -55,10 +63,13 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If we are on the conversation list view
     if (widget.conversation == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Agent requests')),
+        appBar: AppBar(
+          backgroundColor: WhatsAppTheme.headerGreen,
+          foregroundColor: Colors.white,
+          title: const Text('Agent requests'),
+        ),
         body: loading
             ? const Center(child: CircularProgressIndicator())
             : conversationList.isEmpty
@@ -68,12 +79,17 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
                     itemBuilder: (context, index) {
                       final conv = conversationList[index];
                       return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.person)),
+                        leading: CircleAvatar(
+                          backgroundColor: WhatsAppTheme.darkTeal,
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                          ),
+                        ),
                         title: Text(conv.sessionId.replaceAll('_', ' ')),
                         subtitle: Text(conv.state.replaceAll('_', ' ')),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () async {
-                          // Navigate to the same screen but with a conversation selected
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -83,7 +99,6 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
                               ),
                             ),
                           );
-                          // Refresh when returning
                           _load();
                         },
                       );
@@ -92,18 +107,24 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
       );
     }
 
-    // Conversation view
     final conv = widget.conversation!;
     final bool isWaiting = conv.state == 'WAITING_FOR_AGENT';
     final bool isActive = conv.state == 'INTERVENED';
 
     return Scaffold(
-      appBar: AppBar(title: Text(conv.sessionId.replaceAll('_', ' '))),
+      appBar: WhatsAppChatHeader(
+        organizationName: conv.sessionId.replaceAll('_', ' '),
+        statusText: isActive
+            ? 'agent connected'
+            : isWaiting
+                ? 'waiting for agent'
+                : 'attended',
+      ),
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            color: isActive ? const Color(0xffd9fdd3) : const Color(0xfffff3cd),
+            color: isActive ? const Color(0xFFD9FDD3) : const Color(0xFFFFF3CD),
             padding: const EdgeInsets.all(10),
             child: Text(
               isActive
@@ -112,18 +133,31 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
                       ? 'This parent requested school assistance.'
                       : 'Conversation attended.',
               textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF111B21),
+              ),
             ),
           ),
           Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: messages.length,
-                    itemBuilder: (context, i) => MessageBubble(
-                      message: messages[i],
-                      onOption: (_) {},
+            child: WhatsAppChatBackground(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      padding: const EdgeInsets.only(top: 8, bottom: 8),
+                      children: [
+                        const WhatsAppDateSeparator(text: 'TODAY'),
+                        ...messages.map(
+                          (m) => WhatsAppMessageBubble(
+                            text: m.text,
+                            isUser: m.sender == 'USER',
+                            timestamp: m.at,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+            ),
           ),
           SafeArea(
             top: false,
@@ -135,6 +169,10 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
                         await api.intervene(conv.id);
                         if (mounted) Navigator.pop(context);
                       },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: WhatsAppTheme.primaryGreen,
+                        minimumSize: const Size.fromHeight(46),
+                      ),
                       icon: const Icon(Icons.support_agent),
                       label: const Text('Intervene'),
                     )

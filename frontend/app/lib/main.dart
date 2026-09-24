@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'theme/whatsapp_theme.dart';
+import 'widgets/whatsapp_chat_background.dart';
+import 'widgets/whatsapp_chat_header.dart';
+import 'widgets/whatsapp_date_separator.dart';
+import 'widgets/whatsapp_message_bubble.dart';
+import 'widgets/whatsapp_message_composer.dart';
+import 'widgets/whatsapp_typing_indicator.dart';
+
 void main() {
   runApp(const WhatsAppSchoolPrototype());
 }
@@ -16,20 +24,7 @@ class WhatsAppSchoolPrototype extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'School WhatsApp Prototype',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7F9F8),
-        canvasColor: const Color(0xFFF7F9F8),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFF7F9F8),
-          foregroundColor: Color(0xFF202C33),
-          surfaceTintColor: Colors.transparent,
-        ),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00A884),
-          brightness: Brightness.light,
-        ),
-      ),
+      theme: WhatsAppTheme.themeData,
       home: const ModeScreen(),
     );
   }
@@ -1024,90 +1019,36 @@ class _UserChatScreenState extends State<UserChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: const Color(0xFF128C7E),
-              backgroundImage: widget.organization.profileImageUrl.isNotEmpty
-                  ? NetworkImage(widget.organization.profileImageUrl)
-                  : null,
-              child: widget.organization.profileImageUrl.isEmpty
-                  ? Text(
-                      widget.organization.name.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(child: Text(widget.organization.name)),
-                  if (widget.organization.verified)
-                    const Icon(
-                      Icons.verified,
-                      size: 18,
-                      color: Color(0xFF25D366),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      appBar: WhatsAppChatHeader(
+        organizationName: widget.organization.name,
+        profileImageUrl: widget.organization.profileImageUrl,
+        verified: widget.organization.verified,
+        statusText: 'online',
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.only(top: 12),
-              children: messages
-                  .map(
+            child: WhatsAppChatBackground(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                children: [
+                  const WhatsAppDateSeparator(text: 'TODAY'),
+                  ...messages.map(
                     (message) => TemplateMessageBubble(
                       message: message,
                       onOption: (option) => send(option.label),
                     ),
-                  )
-                  .toList(),
-            ),
-          ),
-          if (sending)
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: TypingIndicator(),
-            ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: input,
-                      onSubmitted: send,
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(24),
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
                   ),
-                  IconButton(
-                    onPressed: () => send(input.text),
-                    icon: const Icon(Icons.send),
-                  ),
+                  if (sending) const TypingIndicator(),
                 ],
               ),
             ),
+          ),
+          WhatsAppMessageComposer(
+            controller: input,
+            onSend: send,
+            sending: sending,
           ),
         ],
       ),
@@ -1360,7 +1301,14 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
     final active = widget.conversation.state == 'INTERVENED';
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.conversation.userName)),
+      appBar: WhatsAppChatHeader(
+        organizationName: widget.conversation.userName,
+        statusText: active
+            ? 'agent connected'
+            : waiting
+                ? 'waiting for agent'
+                : 'attended',
+      ),
       body: Column(
         children: [
           Container(
@@ -1374,30 +1322,38 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
                       ? 'This parent requested school assistance.'
                       : 'Conversation attended.',
               textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF111B21),
+              ),
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<ChatMessage>>(
-              future: messages,
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
+            child: WhatsAppChatBackground(
+              child: FutureBuilder<List<ChatMessage>>(
+                future: messages,
+                builder: (_, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
 
-                return ListView(
-                  padding: const EdgeInsets.only(top: 12),
-                  children: snapshot.data!
-                      .map(
+                  return ListView(
+                    padding: const EdgeInsets.only(top: 8, bottom: 8),
+                    children: [
+                      const WhatsAppDateSeparator(text: 'TODAY'),
+                      ...snapshot.data!.map(
                         (message) => TemplateMessageBubble(
                           message: message,
                           onOption: (_) {},
                         ),
-                      )
-                      .toList(),
-                );
-              },
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
           SafeArea(
@@ -1407,6 +1363,10 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
               child: waiting
                   ? FilledButton(
                       onPressed: intervene,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: WhatsAppTheme.primaryGreen,
+                        minimumSize: const Size.fromHeight(46),
+                      ),
                       child: const Text('Intervene'),
                     )
                   : active
@@ -1423,58 +1383,12 @@ class _BusinessChatScreenState extends State<BusinessChatScreen> {
   }
 }
 
-class TypingIndicator extends StatefulWidget {
+class TypingIndicator extends StatelessWidget {
   const TypingIndicator({super.key});
 
   @override
-  State<TypingIndicator> createState() => _TypingIndicatorState();
-}
-
-class _TypingIndicatorState extends State<TypingIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController controller;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (_, child) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          3,
-          (index) => Opacity(
-            opacity: 0.35 + (((controller.value + index / 3) % 1) * 0.65),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-      child: const Text(
-        '•',
-        style: TextStyle(
-          color: Color(0xFF667781),
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return const WhatsAppTypingIndicator();
   }
 }
 
@@ -1490,82 +1404,16 @@ class TemplateMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.sender == 'USER';
-
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 4,
-        ),
-        constraints: const BoxConstraints(maxWidth: 340),
-        decoration: BoxDecoration(
-          color: isUser ? const Color(0xFFD9FDD3) : Colors.white,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 10, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      message.text,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${message.time.hour.toString().padLeft(2, '0')}:'
-                    '${message.time.minute.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (message.options.isNotEmpty) ...[
-              const Divider(height: 1),
-              ...message.options.map(
-                (option) => InkWell(
-                  onTap: () => onOption(option),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 15,
-                    ),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Color(0xFFE9EDEF),
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      option.label,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF00A884),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return WhatsAppMessageBubble(
+      text: message.text,
+      isUser: message.sender == 'USER',
+      timestamp: message.time,
+      options: message.options
+          .map((opt) => WhatsAppMessageOption(id: opt.id, label: opt.label))
+          .toList(),
+      onOptionSelected: (opt) {
+        onOption(ReplyOption(id: opt.id, label: opt.label));
+      },
     );
   }
 }
