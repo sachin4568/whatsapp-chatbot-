@@ -1,7 +1,7 @@
-import 'package:app/utils/constants.dart';
-import 'package:app/widgets/bottom_icon_btn.dart';
-import 'package:app/widgets/chat_list.dart';
-import 'package:app/widgets/header.dart';
+import 'package:organization_chat/utils/constants.dart';
+import 'package:organization_chat/widgets/bottom_icon_btn.dart';
+import 'package:organization_chat/widgets/chat_list.dart';
+import 'package:organization_chat/widgets/header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

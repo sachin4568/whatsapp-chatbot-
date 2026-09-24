@@ -1,4 +1,4 @@
-import 'package:app/utils/constants.dart';
+import 'package:organization_chat/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 class Header extends StatelessWidget {
