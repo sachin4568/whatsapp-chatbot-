@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +34,9 @@ class WhatsAppSchoolPrototype extends StatelessWidget {
 class Api {
   static const baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://whatsapp-chatbot-tvds.onrender.com',
+    defaultValue: kDebugMode
+        ? 'http://127.0.0.1:8000'
+        : 'https://whatsapp-chatbot-tvds.onrender.com',
   );
 
   static const _timeout = Duration(seconds: 12);
@@ -976,7 +979,6 @@ class _UserChatScreenState extends State<UserChatScreen> {
         userId: widget.user.id,
         message: message,
       );
-      await Future.delayed(const Duration(seconds: 3));
       final response = await responseFuture;
 
       setState(() {

@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
+
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://whatsapp-chatbot-tvds.onrender.com',
+    defaultValue: kDebugMode
+        ? 'http://127.0.0.1:8000'
+        : 'https://whatsapp-chatbot-tvds.onrender.com',
   );
 }

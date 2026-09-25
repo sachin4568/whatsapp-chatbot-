@@ -93,7 +93,7 @@ class WhatsAppMessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(11, 8, 9, 5),
                 child: Wrap(
-                  alignment: WrapAlignment.end,
+                  alignment: isUser ? WrapAlignment.end : WrapAlignment.start,
                   crossAxisAlignment: WrapCrossAlignment.end,
                   spacing: 10,
                   runSpacing: 3,
